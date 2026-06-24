@@ -28,7 +28,7 @@
     </style>
   </head>
   <body>
-    <meta width="600" height="160" />
+    <meta width="700" height="160" />
     <div class="ach">
       <div class="achievement-banner animated">
         <div class="achievement-loader"></div>
@@ -55,7 +55,14 @@
         const detailEl = document.querySelector(".detail");
         const iconEl = document.querySelector(".icon img");
         const durationMeta = document.querySelector('meta[name="duration"]');
+        const frameMeta = document.querySelector("meta[width][height]");
         const baseTotal = Math.max(1, Number(durationMeta?.content || 10000));
+        const baseFrameWidth = Math.max(
+          0,
+          Number(frameMeta?.getAttribute("width")) || 0
+        );
+        const SCALE_WIDTH_CLAMP_THRESHOLD = 1.26;
+        const HORIZONTAL_SAFE_MARGIN_PX = 24;
         const getCloseDelay = () =>
           Math.max(0, Number(durationMeta?.content || 10000));
         let closeDelay = getCloseDelay();
@@ -66,7 +73,7 @@
 
         let closeTimer = null;
         const MARGIN_X = 0;
-        const MARGIN_BOTTOM = 0;
+        const MARGIN_BOTTOM = 10;
         const MARGIN_TOP = 0;
         const TOP_TRANSLATE_ADJUST_PX = -50;
         function notifyScreenshotReady(delayMs = 0) {
@@ -319,7 +326,35 @@
           const constructedWidth = Math.ceil(offsetLeft + textWidth + padding);
 
           const baseWidth = Math.max(autoWidth, constructedWidth, collapsedPx);
-          const finalWidth = Math.max(baseWidth + 4, collapsedPx);
+          const requestedWidth = Math.max(baseWidth + 4, collapsedPx);
+          const currentScale = Math.max(
+            0.1,
+            parseFloat(styles.getPropertyValue("--scale")) || 1
+          );
+          const viewportWidth =
+            window.innerWidth || document.documentElement.clientWidth || 0;
+          const scaledWindowLimit =
+            viewportWidth > 0
+              ? Math.max(
+                  collapsedPx,
+                  Math.floor(viewportWidth / currentScale) -
+                    HORIZONTAL_SAFE_MARGIN_PX * 2
+                )
+              : baseFrameWidth;
+          const maxExpandedWidth =
+            currentScale > SCALE_WIDTH_CLAMP_THRESHOLD
+              ? Math.max(
+                  collapsedPx,
+                  Math.min(
+                    baseFrameWidth || requestedWidth,
+                    scaledWindowLimit || requestedWidth
+                  )
+                )
+              : Infinity;
+          const finalWidth = Math.max(
+            Math.min(requestedWidth, maxExpandedWidth),
+            collapsedPx
+          );
           container.style.setProperty("--ach-width", `${finalWidth}px`);
         };
 
